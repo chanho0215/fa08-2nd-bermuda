@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { WelcomeScreen } from "@/components/screens/welcome-screen"
 import { VehicleInputScreen } from "@/components/screens/vehicle-input-screen"
 import { SummaryScreen } from "@/components/screens/summary-screen"
 import { PriceResultScreen } from "@/components/screens/price-result-screen"
@@ -52,7 +53,7 @@ const initialVehicleData: VehicleFormData = {
 }
 
 export default function Home() {
-  const [currentScreen, setCurrentScreen] = useState<1 | 2 | 3>(1)
+  const [currentScreen, setCurrentScreen] = useState<0 | 1 | 2 | 3>(0)
   const [vehicleData, setVehicleData] = useState<VehicleFormData>(initialVehicleData)
   const [prediction, setPrediction] = useState<PredictionData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -99,6 +100,10 @@ export default function Home() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120px] h-[30px] bg-foreground rounded-b-2xl z-50 pointer-events-none" />
 
       <div className="pt-[30px]">
+        {currentScreen === 0 && (
+          <WelcomeScreen onStart={() => setCurrentScreen(1)} />
+        )}
+
         {currentScreen === 1 && (
           <VehicleInputScreen onNext={handleVehicleNext} />
         )}
@@ -122,21 +127,23 @@ export default function Home() {
         )}
       </div>
 
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 bg-foreground/90 backdrop-blur-sm rounded-full shadow-lg">
-        {[1, 2, 3].map((screen) => (
-          <button
-            key={screen}
-            onClick={() => setCurrentScreen(screen as 1 | 2 | 3)}
-            className={`w-8 h-8 rounded-full text-sm font-medium transition-all ${
-              currentScreen === screen
-                ? "bg-primary text-primary-foreground"
-                : "bg-card/20 text-card hover:bg-card/30"
-            }`}
-          >
-            {screen}
-          </button>
-        ))}
-      </div>
+      {currentScreen > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 bg-foreground/90 backdrop-blur-sm rounded-full shadow-lg">
+          {[1, 2, 3].map((screen) => (
+            <button
+              key={screen}
+              onClick={() => setCurrentScreen(screen as 1 | 2 | 3)}
+              className={`w-8 h-8 rounded-full text-sm font-medium transition-all ${
+                currentScreen === screen
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card/20 text-card hover:bg-card/30"
+              }`}
+            >
+              {screen}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
