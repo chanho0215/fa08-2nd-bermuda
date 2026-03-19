@@ -299,12 +299,12 @@ export function PriceResultScreen({
                         <p className="screen-body mt-2 text-muted-foreground">{strategy.description}</p>
                       </div>
                     </div>
-                    <div className="min-w-0 shrink-0 text-right">
-                      <div className="flex items-end justify-end gap-1 leading-none text-foreground">
-                        <span className="text-[1.75rem] font-extrabold tracking-tight sm:text-3xl">
+                    <div className="shrink-0 text-right">
+                      <div className="whitespace-nowrap leading-none text-foreground">
+                        <span className="text-[1.45rem] font-extrabold tracking-tight sm:text-[1.7rem]">
                           {normalizePrice(strategy.price).toLocaleString()}
                         </span>
-                        <span className="pb-0.5 text-sm font-semibold text-muted-foreground sm:text-base">
+                        <span className="ml-1 text-[0.8rem] font-semibold text-muted-foreground sm:text-sm">
                           만원
                         </span>
                       </div>
