@@ -218,19 +218,20 @@ export function PriceResultScreen({
 
   return (
     <div className="min-h-screen bg-background pb-28">
-      <div className="border-b border-border bg-background px-6 pb-4 pt-6">
-        <div className="mb-4 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-muted transition-colors hover:bg-muted/80"
-          >
-            <ArrowLeft className="h-5 w-5 text-foreground" />
-          </button>
-          <h1 className="screen-hero text-foreground">추천 판매가격</h1>
-          <div className="w-10" />
+      <header className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur-sm">
+        <div className="flex h-14 items-center px-4">
+           <button
+             type="button"
+             onClick={onBack}
+             className="flex h-10 w-10 items-center justify-center rounded-full bg-muted transition-colors hover:bg-muted/80"
+              >
+             <ArrowLeft className="h-5 w-5 text-foreground" />
+           </button>
+           <h1 className="flex-1 text-center text-base font-semibold text-foreground">추천 판매가격</h1>
+           <div className="w-10" />
         </div>
-      </div>
+      </header>
+    </div>
 
       <div className="space-y-5 px-6 py-5">
         <section className="rounded-3xl border border-orange-100 bg-orange-50/70 p-5">
