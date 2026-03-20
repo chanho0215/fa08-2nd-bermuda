@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from preprocess import build_model_input
 
 BASE_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = BASE_DIR.parent
 MODEL_PATHS = [
     BASE_DIR / "models" / "xgb_quantile_kfte_tuned_models.pkl",
     BASE_DIR / "models" / "xgb_quantile_models.pkl",
@@ -24,6 +25,34 @@ FEATURE_PATHS = [
     BASE_DIR / "models" / "model_features.pkl",
 ]
 ENCODING_PATH = BASE_DIR / "models" / "kfte_encoding_map.pkl"
+
+
+def load_env_file():
+    env_paths = [
+        PROJECT_DIR / ".env.local",
+        PROJECT_DIR / ".env",
+        BASE_DIR / ".env.local",
+        BASE_DIR / ".env",
+    ]
+
+    for env_path in env_paths:
+        if not env_path.exists():
+            continue
+
+        for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
+load_env_file()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
@@ -185,6 +214,7 @@ def generate_price_explanation(
         "summary": "입력한 차량 조건을 바탕으로 예상 판매 가격대를 계산했습니다.",
         "detail": "연식, 주행거리, 사고 이력, 옵션 수를 함께 반영해 가격 범위를 구성했습니다.",
         "tip": "빠르게 판매하려면 빠른 판매가를, 여유가 있다면 적정 판매가부터 시작해 보세요.",
+        "source": "fallback",
     }
 
     if not openai_client:
@@ -253,6 +283,7 @@ def generate_price_explanation(
             "summary": result.get("summary", default_result["summary"]),
             "detail": result.get("detail", default_result["detail"]),
             "tip": result.get("tip", default_result["tip"]),
+            "source": "openai",
         }
     except Exception:
         return default_result

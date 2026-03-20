@@ -33,6 +33,7 @@ interface PriceResultScreenProps {
       summary: string
       detail: string
       tip: string
+      source?: string
     }
   } | null
 }
@@ -357,6 +358,14 @@ export function PriceResultScreen({
           </div>
 
           <div className="space-y-4">
+            <div className="rounded-2xl border border-border bg-background p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <p className="screen-caption font-semibold text-foreground">요약</p>
+              </div>
+              <p className="screen-body text-foreground">{explanationSummary}</p>
+            </div>
+
             <div className="rounded-2xl border border-border bg-background p-4">
               <div className="mb-2 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
