@@ -2,6 +2,8 @@ from pathlib import Path
 import json
 import os
 import pickle
+from functools import lru_cache
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
@@ -13,8 +15,15 @@ from pydantic import BaseModel
 from preprocess import build_model_input
 
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR / "models" / "xgb_quantile_models.pkl"
-FEATURE_PATH = BASE_DIR / "models" / "model_features.pkl"
+MODEL_PATHS = [
+    BASE_DIR / "models" / "xgb_quantile_kfte_tuned_models.pkl",
+    BASE_DIR / "models" / "xgb_quantile_models.pkl",
+]
+FEATURE_PATHS = [
+    BASE_DIR / "models" / "kfte_feature_columns.pkl",
+    BASE_DIR / "models" / "model_features.pkl",
+]
+ENCODING_PATH = BASE_DIR / "models" / "kfte_encoding_map.pkl"
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
@@ -50,14 +59,65 @@ class PredictRequest(BaseModel):
     options: list[str] = []
 
 
+def resolve_existing_path(paths: list[Path]) -> Path:
+    for path in paths:
+        if path.exists():
+            return path
+    raise FileNotFoundError(f"아티팩트를 찾을 수 없습니다: {paths}")
+
+
+@lru_cache(maxsize=1)
 def load_artifacts():
-    with open(MODEL_PATH, "rb") as model_file:
+    model_path = resolve_existing_path(MODEL_PATHS)
+    feature_path = resolve_existing_path(FEATURE_PATHS)
+
+    with open(model_path, "rb") as model_file:
         models = pickle.load(model_file)
 
-    with open(FEATURE_PATH, "rb") as feature_file:
+    with open(feature_path, "rb") as feature_file:
         model_features = pickle.load(feature_file)
 
-    return models, model_features
+    model_encoding_map = {}
+    if ENCODING_PATH.exists():
+        with open(ENCODING_PATH, "rb") as encoding_file:
+            model_encoding_map = pickle.load(encoding_file)
+
+    return models, model_features, model_encoding_map
+
+
+def get_quantile_model(models, quantile: float):
+    if isinstance(models, dict):
+        for candidate in (quantile, str(quantile)):
+            if candidate in models:
+                return models[candidate]
+
+        for key, model in models.items():
+            try:
+                if abs(float(key) - quantile) < 1e-9:
+                    return model
+            except (TypeError, ValueError):
+                continue
+
+        raise KeyError(f"해당 분위수 모델을 찾을 수 없습니다: {quantile}")
+
+    if isinstance(models, (list, tuple)) and len(models) >= 3:
+        if quantile <= 0.05:
+            return models[0]
+        if quantile >= 0.95:
+            return models[-1]
+        return models[len(models) // 2]
+
+    raise TypeError("지원하지 않는 모델 아티팩트 형식입니다.")
+
+
+def decode_prediction(raw_prediction: float) -> float:
+    return float(np.expm1(raw_prediction)) if raw_prediction < 20 else float(raw_prediction)
+
+
+def get_base_margin(row: dict) -> Optional[List[float]]:
+    if "모델_encoded" not in row:
+        return None
+    return [float(row["모델_encoded"])]
 
 
 def get_margin_rate(q50: float) -> float:
@@ -212,15 +272,22 @@ def predict(req: PredictRequest):
         raise HTTPException(status_code=400, detail="현재 전기차는 지원하지 않습니다.")
 
     try:
-        models, model_features = load_artifacts()
+        models, model_features, model_encoding_map = load_artifacts()
         form_data = req.model_dump()
 
-        row = build_model_input(form_data, model_features)
+        row = build_model_input(form_data, model_features, model_encoding_map)
         x_input = pd.DataFrame([[row[col] for col in model_features]], columns=model_features)
+        base_margin = get_base_margin(row)
 
-        pred_fast = float(np.expm1(models[0.05].predict(x_input)[0]))
-        pred_mid = float(np.expm1(models[0.5].predict(x_input)[0]))
-        pred_high = float(np.expm1(models[0.95].predict(x_input)[0]))
+        pred_fast = decode_prediction(
+            get_quantile_model(models, 0.05).predict(x_input, base_margin=base_margin)[0]
+        )
+        pred_mid = decode_prediction(
+            get_quantile_model(models, 0.5).predict(x_input, base_margin=base_margin)[0]
+        )
+        pred_high = decode_prediction(
+            get_quantile_model(models, 0.95).predict(x_input, base_margin=base_margin)[0]
+        )
 
         q05, q50, q95 = sorted([pred_fast, pred_mid, pred_high])
         adjusted = adjust_to_c2c_prices(q05, q50, q95)
