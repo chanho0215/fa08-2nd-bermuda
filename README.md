@@ -125,20 +125,20 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    U[User] --> FE[Next.js Frontend]
-    FE --> API1[/app/api/predict]
-    FE --> API2[/app/api/explain-price]
+    U["User"] --> FE["Next.js Frontend"]
+    FE --> API1["Next.js API Route: /api/predict"]
+    FE --> API2["Next.js API Route: /api/explain-price"]
 
-    API1 --> BE1[FastAPI /predict]
-    API2 --> BE2[FastAPI /explain-price]
+    API1 --> BE1["FastAPI Endpoint: /predict"]
+    API2 --> BE2["FastAPI Endpoint: /explain-price"]
 
-    BE1 --> PP[전처리 로직]
-    PP --> ML[Quantile XGBoost Models]
-    ML --> ADJ[C2C 가격 조정 로직]
+    BE1 --> PP["전처리 로직"]
+    PP --> ML["Quantile XGBoost Models"]
+    ML --> ADJ["C2C 가격 조정 로직"]
     ADJ --> FE
 
-    BE2 --> EXP[가격 설명 생성 로직]
-    EXP --> OA[OpenAI API Optional]
+    BE2 --> EXP["가격 설명 생성 로직"]
+    EXP --> OA["OpenAI API (Optional)"]
     EXP --> FE
 ```
 
