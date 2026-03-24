@@ -513,5 +513,4 @@ flowchart LR
 | 항목 | 내용 |
 | --- | --- |
 | 성과 |  |
-| 결과물 링크 |  |
-| 배포 링크 |  |
+| 결과물 배포 링크 | https://car-price-bermuda.vercel.app/ |
